@@ -10,8 +10,8 @@ const Z: Byte = 0b0000_0010;
 const I: Byte = 0b0000_0100;
 const D: Byte = 0b0000_1000;
 const B: Byte = 0b0001_0000;
-const V: Byte = 0b0010_0000;
-const N: Byte = 0b0100_0000;
+const V: Byte = 0b0100_0000;
+const N: Byte = 0b1000_0000;
 
 // Opcodes
 pub const INS_LDA_IM: Byte = 0xA9;
@@ -22,7 +22,9 @@ pub const INS_JSR: Byte = 0x20;
 
 pub const INS_ADC_IM: Byte = 0x69;
 
-pub const INS_STA_ABS: Byte = 0x8D; 
+pub const INS_STA_ABS: Byte = 0x8D;
+
+pub const INS_CLC_I: Byte = 0x18;
 
 // Size allocation
 pub const MAX_MEM: usize = 1024*64;
@@ -142,6 +144,30 @@ impl CPU {
 
         self.A = result;
     }
+
+    fn cl_set_status(&mut self, flag: Byte) {
+        match flag {
+            C => {
+                self.PS &= !C;
+            }
+
+            D => {
+                self.PS &= !D;
+            }
+
+            I => {
+                self.PS &= !I;
+            }
+
+            V => {
+                self.PS &= !V;
+            }
+
+            _ => {
+                panic!("Invalid flag passed: {}", flag);
+            }
+        }
+    }
     
     // Read/Fetch Byte
     fn fetch_byte(&mut self, cycles: &mut u32, memory: &mut MEM) -> Byte {
@@ -181,12 +207,22 @@ impl CPU {
 
                     self.adc_set_status(value, carry); 
 
+                    println!("\n--------CPU--------");
                     println!("PC: {:04X}", self.PC);
                     println!("SP: {:04X}", self.SP);
                     println!("A:  {:02X}", self.A);
                     println!("X:  {:02X}", self.X);
                     println!("Y:  {:02X}", self.Y);
                     println!("PS: {:02X}", self.PS);
+
+                    println!("\n-------FLAGS-------");
+                    println!("C: {}", self.PS & C != 0);
+                    println!("Z: {}", self.PS & Z != 0);
+                    println!("I: {}", self.PS & I != 0);
+                    println!("D: {}", self.PS & D != 0);
+                    println!("B: {}", self.PS & B != 0);
+                    println!("V: {}", self.PS & V != 0);
+                    println!("N: {}", self.PS & N != 0);
                 }
 
                 //LDA
@@ -195,6 +231,23 @@ impl CPU {
                     self.A = value;
                     
                     self.lda_set_status(); 
+
+                    println!("\n--------CPU--------");
+                    println!("PC: {:04X}", self.PC);
+                    println!("SP: {:04X}", self.SP);
+                    println!("A:  {:02X}", self.A);
+                    println!("X:  {:02X}", self.X);
+                    println!("Y:  {:02X}", self.Y);
+                    println!("PS: {:02X}", self.PS);
+
+                    println!("\n-------FLAGS-------");
+                    println!("C: {}", self.PS & C != 0);
+                    println!("Z: {}", self.PS & Z != 0);
+                    println!("I: {}", self.PS & I != 0);
+                    println!("D: {}", self.PS & D != 0);
+                    println!("B: {}", self.PS & B != 0);
+                    println!("V: {}", self.PS & V != 0);
+                    println!("N: {}", self.PS & N != 0);
                 }
 
                 INS_LDA_ZP => {
@@ -222,22 +275,65 @@ impl CPU {
                     self.PC = sub_address;
 
                     cycles -= 1;
-                }
 
-                //STA
-                INS_STA_ABS => {
-                    let address: Word = self.fetch_word( &mut cycles, memory );
-
-                    println!("\nPC: {:04X}", self.PC);
+                    println!("\n--------CPU--------");
+                    println!("PC: {:04X}", self.PC);
                     println!("SP: {:04X}", self.SP);
                     println!("A:  {:02X}", self.A);
                     println!("X:  {:02X}", self.X);
                     println!("Y:  {:02X}", self.Y);
                     println!("PS: {:02X}", self.PS);
+
+                    println!("\n-------FLAGS-------");
+                    println!("C: {}", self.PS & C != 0);
+                    println!("Z: {}", self.PS & Z != 0);
+                    println!("I: {}", self.PS & I != 0);
+                    println!("D: {}", self.PS & D != 0);
+                    println!("B: {}", self.PS & B != 0);
+                    println!("V: {}", self.PS & V != 0);
+                    println!("N: {}", self.PS & N != 0);
+                }
+
+                //STA
+                INS_STA_ABS => {
+                    let address: Word = self.fetch_word( &mut cycles, memory );
                     
                     memory.write_byte(address as u32, self.A, &mut cycles);
 
+                    println!("\n--------CPU--------");
+                    println!("PC: {:04X}", self.PC);
+                    println!("SP: {:04X}", self.SP);
+                    println!("A:  {:02X}", self.A);
+                    println!("X:  {:02X}", self.X);
+                    println!("Y:  {:02X}", self.Y);
+                    println!("PS: {:02X}", self.PS);
+
+                    println!("\n-------FLAGS-------");
+                    println!("C: {}", self.PS & C != 0);
+                    println!("Z: {}", self.PS & Z != 0);
+                    println!("I: {}", self.PS & I != 0);
+                    println!("D: {}", self.PS & D != 0);
+                    println!("B: {}", self.PS & B != 0);
+                    println!("V: {}", self.PS & V != 0);
+                    println!("N: {}", self.PS & N != 0);
+
                     dump_memory(&memory, 0x0200, 0x10000);
+                }
+
+                //CL
+                INS_CLC_I => {
+                    self.cl_set_status(C);
+                    
+                    cycles -= 1;
+
+                    println!("\n-------FLAGS-------");
+                    println!("C: {}", self.PS & C != 0);
+                    println!("Z: {}", self.PS & Z != 0);
+                    println!("I: {}", self.PS & I != 0);
+                    println!("D: {}", self.PS & D != 0);
+                    println!("B: {}", self.PS & B != 0);
+                    println!("V: {}", self.PS & V != 0);
+                    println!("N: {}", self.PS & N != 0);
                 }
 
                 _ => {

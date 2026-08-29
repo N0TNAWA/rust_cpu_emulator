@@ -24,12 +24,13 @@ fn main() {
     mem.DATA[0xFFFE] = 0x42;
     mem.DATA[0x4242] = core::INS_LDA_IM;
     mem.DATA[0x4243] = 0x09; // First number
-    mem.DATA[0x4244] = core::INS_ADC_IM;
-    mem.DATA[0x4245] = 0x10; // Second number
-    mem.DATA[0x4246] = core::INS_STA_ABS;
-    mem.DATA[0x4247] = 0x00;
-    mem.DATA[0x4248] = 0x02;
+    mem.DATA[0x4244] = core::INS_CLC_I;
+    mem.DATA[0x4245] = core::INS_ADC_IM;
+    mem.DATA[0x4246] = 0x10; // Second number
+    mem.DATA[0x4247] = core::INS_STA_ABS;
+    mem.DATA[0x4248] = 0x00;
+    mem.DATA[0x4249] = 0x02;
     //inline a program - end
 
-    cpu.execute(14, &mut mem);
+    cpu.execute(16, &mut mem);
 }
