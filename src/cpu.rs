@@ -1,3 +1,5 @@
+use std::path::absolute;
+
 use crate::{Byte, Word};
 use crate::memory::MEM;
 use crate::instructions::*;
@@ -38,7 +40,7 @@ impl CPU {
 impl CPU {
     // Reset CPU
     pub fn reset(&mut self, memory: &mut MEM) {
-        self.PC = 0xFF00;
+        self.PC = 0xFFFC;
         self.SP = 0xFF; 
 
         self.A = 0; 
@@ -51,7 +53,7 @@ impl CPU {
     }
 
     // Set status functions
-    fn lda_set_status(&mut self) {
+    fn ld_set_status(&mut self) {
         if self.A == 0 {
             self.PS |= Z;
         } else {
@@ -153,12 +155,12 @@ impl CPU {
         return low_byte | (high_byte << 8);
     }
 
-    pub fn push_sp_to_stack(&mut self, cycles: &mut u32, memory: &mut MEM) {
+    fn push_sp_to_stack(&mut self, cycles: &mut u32, memory: &mut MEM) {
         self.write_word(0x0100 | self.SP as Word - 1, self.PC - 1, cycles, memory);
         self.SP -= 2;
     }
 
-    pub fn pop_word_from_stack(&mut self, cycles: &mut u32, memory: &mut MEM) -> Word {
+    fn pop_word_from_stack(&mut self, cycles: &mut u32, memory: &mut MEM) -> Word {
         let value: Word = self.read_word(cycles, 0x0100 | self.SP as Word + 1, memory);
         self.SP += 2;
         *cycles -= 1;
@@ -166,14 +168,14 @@ impl CPU {
     }
 
 
-    pub fn write_word(&mut self, address: Word, data: Word, cycles: &mut u32, memory: &mut MEM) {
+    fn write_word(&mut self, address: Word, data: Word, cycles: &mut u32, memory: &mut MEM) {
         memory.DATA[address as usize]         = (data & 0x00FF) as Byte;
         memory.DATA[(address + 1) as usize]   = (data >> 8) as Byte;
 
         *cycles -= 2; 
     }
 
-    pub fn write_byte(&mut self, address: Word, data: Byte, cycles: &mut u32, memory: &mut MEM) {
+    fn write_byte(&mut self, address: Word, data: Byte, cycles: &mut u32, memory: &mut MEM) {
         memory.DATA[address as usize] = data;
 
         *cycles -= 1;
@@ -214,12 +216,20 @@ impl CPU {
                     self.adc_set_status(value, carry);  
                 }
 
+                INS_ADC_ABS => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+                    let carry: Byte = if self.PS & C != 0 {1} else {0};
+
+                    let value = self.read_byte(&mut cycles, absolute_address, memory);
+                    self.adc_set_status(value, carry);
+                }
+
                 //LDA
                 INS_LDA_IM => {
                     let value: Byte = self.fetch_byte( &mut cycles, memory );
                     self.A = value;
                     
-                    self.lda_set_status();
+                    self.ld_set_status();
 
                     dump_memory(memory, 0x0000, 0xFFFF);
                     self.debug();
@@ -229,7 +239,7 @@ impl CPU {
                     let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
                     self.A = self.read_byte( &mut cycles, zero_page_address as Word, memory);
 
-                    self.lda_set_status();
+                    self.ld_set_status();
                 }
 
                 INS_LDA_ZPX => {
@@ -239,7 +249,168 @@ impl CPU {
                     cycles -= 1;
 
                     self.A = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-                    self.lda_set_status();
+                    self.ld_set_status();
+                }
+
+                INS_LDA_ABS => {
+                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
+                    self.A = self.read_byte(&mut cycles, absolute_address, memory);
+
+                    self.ld_set_status();
+
+                    self.debug();
+                }
+
+                INS_LDA_ABSX => {
+                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
+                    let absolute_address_x: Word = absolute_address + self.X as Word;
+                    self.A = self.read_byte(&mut cycles, absolute_address_x, memory); 
+
+                    if absolute_address_x - absolute_address >= 0xFF {
+                        cycles -= 1;
+                    }
+
+                    self.ld_set_status();
+
+                    self.debug();
+                }
+
+                INS_LDA_ABSY => {
+                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
+                    let absolute_address_y: Word = absolute_address + self.Y as Word;
+                    self.A = self.read_byte(&mut cycles, absolute_address_y, memory); 
+
+                    if absolute_address_y - absolute_address >= 0xFF {
+                        cycles -= 1;
+                    }
+
+                    self.ld_set_status();
+
+                    self.debug();
+                }
+
+                INS_LDA_INDX => {
+                    let mut zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    zero_page_address += self.X;
+
+                    cycles -= 1;
+
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
+                    self.A = self.read_byte(&mut cycles, effective_address, memory);
+
+                    self.ld_set_status();
+                }
+
+                INS_LDA_INDY => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
+                    let effective_address_y: Word = effective_address + self.Y as Word;
+
+                    self.A = self.read_byte(&mut cycles, effective_address_y, memory);
+
+                    if effective_address_y - effective_address >= 0xFF {
+                        cycles -= 1;
+                    }
+
+                    self.ld_set_status();
+
+                    self.debug();
+                }
+                
+                //LDX
+                INS_LDX_IM => {
+                    let value: Byte = self.fetch_byte( &mut cycles, memory );
+                    self.X = value;
+                    
+                    self.ld_set_status();
+                }
+
+                INS_LDX_ZP => {
+                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
+                    self.X = self.read_byte( &mut cycles, zero_page_address as Word, memory);
+
+                    self.ld_set_status();
+                }
+                
+                INS_LDX_ZPY => {
+                    let mut zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
+                    zero_page_address += self.Y;
+
+                    cycles -= 1;
+
+                    self.X = self.read_byte( &mut cycles, zero_page_address as Word, memory);
+                    self.ld_set_status();
+                }
+
+                INS_LDX_ABS => {
+                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
+                    self.X = self.read_byte(&mut cycles, absolute_address, memory);
+
+                    self.ld_set_status();
+
+                    self.debug();
+                }
+
+                INS_LDX_ABSY => {
+                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
+                    let absolute_address_y: Word = absolute_address + self.Y as Word;
+                    self.X = self.read_byte(&mut cycles, absolute_address_y, memory); 
+
+                    if absolute_address_y - absolute_address >= 0xFF {
+                        cycles -= 1;
+                    }
+
+                    self.ld_set_status();
+
+                    self.debug();
+                }
+
+                //LDY
+                INS_LDY_IM => {
+                    let value: Byte = self.fetch_byte( &mut cycles, memory );
+                    self.Y = value;
+                    
+                    self.ld_set_status();
+                }
+
+                INS_LDY_ZP => {
+                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
+                    self.Y = self.read_byte( &mut cycles, zero_page_address as Word, memory);
+
+                    self.ld_set_status();
+                }
+                
+                INS_LDY_ZPY => {
+                    let mut zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
+                    zero_page_address += self.Y;
+
+                    cycles -= 1;
+
+                    self.Y = self.read_byte( &mut cycles, zero_page_address as Word, memory);
+                    self.ld_set_status();
+                }
+
+                INS_LDY_ABS => {
+                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
+                    self.Y = self.read_byte(&mut cycles, absolute_address, memory);
+
+                    self.ld_set_status();
+
+                    self.debug();
+                }
+
+                INS_LDY_ABSX => {
+                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
+                    let absolute_address_x: Word = absolute_address + self.X as Word;
+                    self.Y = self.read_byte(&mut cycles, absolute_address_x, memory); 
+
+                    if absolute_address_x - absolute_address >= 0xFF {
+                        cycles -= 1;
+                    }
+
+                    self.ld_set_status();
+
+                    self.debug();
                 }
 
                 //JSR/RTS
@@ -257,6 +428,19 @@ impl CPU {
                     self.PC = return_address + 1;
 
                     cycles -= 2;
+                }
+
+                //JMP
+                INS_JMP_ABS => {
+                    let jump_address: Word = self.fetch_word(&mut cycles, memory);
+                    self.PC = jump_address;
+                }
+
+                INS_JMP_IND => {
+                    let pointer: Word = self.fetch_word(&mut cycles, memory);
+                    let effective_address: Word = self.read_word(&mut cycles, pointer, memory);
+
+                    self.PC = effective_address;
                 }
 
                 //STA
@@ -278,6 +462,8 @@ impl CPU {
                     break;
                 }
             }
+
+            println!("Cycles remaining: {}", cycles);
         } 
     }
 
