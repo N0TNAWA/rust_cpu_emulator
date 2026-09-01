@@ -18,7 +18,7 @@ pub const INS_LDX_ABSY: Byte = 0xBE;
 
 pub const INS_LDY_IM: Byte = 0xA0;
 pub const INS_LDY_ZP: Byte = 0xA4;
-pub const INS_LDY_ZPY: Byte = 0xB4;
+pub const INS_LDY_ZPX: Byte = 0xB4;
 pub const INS_LDY_ABS: Byte = 0xAC;
 pub const INS_LDY_ABSX: Byte = 0xBC;
 
@@ -37,6 +37,12 @@ pub const INS_ADC_ABSY: Byte = 0x79;
 pub const INS_ADC_INDX: Byte = 0x61;
 pub const INS_ADC_INDY: Byte = 0x71;
 
+pub const INS_STA_ZP: Byte = 0x85;
+pub const INS_STA_ZPX: Byte = 0x95;
 pub const INS_STA_ABS: Byte = 0x8D;
+pub const INS_STA_ABSX: Byte = 0x9D;
+pub const INS_STA_ABSY: Byte = 0x99;
+pub const INS_STA_INDX: Byte = 0x81;
+pub const INS_STA_INDY: Byte = 0x91;
 
 pub const INS_CLC_I: Byte = 0x18;

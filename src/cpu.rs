@@ -224,6 +224,61 @@ impl CPU {
                     self.adc_set_status(value, carry);
                 }
 
+                INS_ADC_ABSX => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
+
+                    let carry: Byte = if self.PS & C != 0 {1} else {0};
+
+                    if (absolute_address & 0xFF00) != (absolute_address_x & 0xFF00) {
+                        cycles -= 1;
+                    }
+
+                    let value = self.read_byte(&mut cycles, absolute_address_x, memory);
+                    self.adc_set_status(value, carry);  
+                }
+
+                INS_ADC_ABSY => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
+                    let carry: Byte = if self.PS & C != 0 {1} else {0};
+
+                    if (absolute_address & 0xFF00) != (absolute_address_y & 0xFF00) {
+                        cycles -= 1;
+                    }
+
+                    let value = self.read_byte(&mut cycles, absolute_address_y, memory);
+                    self.adc_set_status(value, carry);
+                }
+
+                INS_ADC_INDX => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let zero_page_address = zero_page_address.wrapping_add(self.X);
+                    let carry: Byte = if self.PS & C != 0 {1} else {0};
+
+                    cycles -= 1;
+
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
+                    let value = self.read_byte(&mut cycles, effective_address, memory);
+
+                    self.adc_set_status(value, carry);
+                }
+
+                INS_ADC_INDY => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
+                    let effective_address_y = effective_address.wrapping_add(self.Y as Word);
+                    let carry: Byte = if self.PS & C != 0 {1} else {0};
+
+                    let value = self.read_byte(&mut cycles, effective_address_y, memory);
+
+                    if (effective_address & 0xFF00) != (effective_address_y & 0xFF00) {
+                        cycles -= 1;
+                    }
+
+                    self.adc_set_status(value, carry);
+                }
+
                 //LDA
                 INS_LDA_IM => {
                     let value: Byte = self.fetch_byte( &mut cycles, memory );
@@ -243,8 +298,8 @@ impl CPU {
                 }
 
                 INS_LDA_ZPX => {
-                    let mut zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    zero_page_address += self.X;
+                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
+                    let zero_page_address = zero_page_address.wrapping_add(self.X);
 
                     cycles -= 1;
 
@@ -263,10 +318,10 @@ impl CPU {
 
                 INS_LDA_ABSX => {
                     let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    let absolute_address_x: Word = absolute_address + self.X as Word;
+                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
                     self.A = self.read_byte(&mut cycles, absolute_address_x, memory); 
 
-                    if absolute_address_x - absolute_address >= 0xFF {
+                    if (absolute_address & 0xFF00) != (absolute_address_x & 0xFF00) {
                         cycles -= 1;
                     }
 
@@ -277,10 +332,10 @@ impl CPU {
 
                 INS_LDA_ABSY => {
                     let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    let absolute_address_y: Word = absolute_address + self.Y as Word;
+                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
                     self.A = self.read_byte(&mut cycles, absolute_address_y, memory); 
 
-                    if absolute_address_y - absolute_address >= 0xFF {
+                    if (absolute_address & 0xFF00) != (absolute_address_y & 0xFF00) {
                         cycles -= 1;
                     }
 
@@ -290,8 +345,8 @@ impl CPU {
                 }
 
                 INS_LDA_INDX => {
-                    let mut zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    zero_page_address += self.X;
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let zero_page_address = zero_page_address.wrapping_add(self.X);
 
                     cycles -= 1;
 
@@ -304,11 +359,11 @@ impl CPU {
                 INS_LDA_INDY => {
                     let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
                     let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-                    let effective_address_y: Word = effective_address + self.Y as Word;
+                    let effective_address_y = effective_address.wrapping_add(self.Y as Word);
 
                     self.A = self.read_byte(&mut cycles, effective_address_y, memory);
 
-                    if effective_address_y - effective_address >= 0xFF {
+                    if (effective_address & 0xFF00) != (effective_address_y & 0xFF00) {
                         cycles -= 1;
                     }
 
@@ -333,8 +388,8 @@ impl CPU {
                 }
                 
                 INS_LDX_ZPY => {
-                    let mut zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    zero_page_address += self.Y;
+                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
+                    let zero_page_address = zero_page_address.wrapping_add(self.Y);
 
                     cycles -= 1;
 
@@ -353,10 +408,10 @@ impl CPU {
 
                 INS_LDX_ABSY => {
                     let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    let absolute_address_y: Word = absolute_address + self.Y as Word;
+                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
                     self.X = self.read_byte(&mut cycles, absolute_address_y, memory); 
 
-                    if absolute_address_y - absolute_address >= 0xFF {
+                    if (absolute_address & 0xFF00) != (absolute_address_y & 0xFF00) {
                         cycles -= 1;
                     }
 
@@ -380,9 +435,9 @@ impl CPU {
                     self.ld_set_status();
                 }
                 
-                INS_LDY_ZPY => {
-                    let mut zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    zero_page_address += self.Y;
+                INS_LDY_ZPX => {
+                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
+                    let zero_page_address = zero_page_address.wrapping_add(self.X);
 
                     cycles -= 1;
 
@@ -401,16 +456,69 @@ impl CPU {
 
                 INS_LDY_ABSX => {
                     let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    let absolute_address_x: Word = absolute_address + self.X as Word;
+                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
                     self.Y = self.read_byte(&mut cycles, absolute_address_x, memory); 
 
-                    if absolute_address_x - absolute_address >= 0xFF {
+                    if (absolute_address & 0xFF00) != (absolute_address_x & 0xFF00) {
                         cycles -= 1;
                     }
 
                     self.ld_set_status();
 
                     self.debug();
+                }
+
+                //STA
+                INS_STA_ZP => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+
+                    self.write_byte(zero_page_address as Word, self.A, &mut cycles, memory);    
+                }
+
+                INS_STA_ZPX => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let zero_page_address = zero_page_address.wrapping_add(self.X);
+
+                    self.write_byte(zero_page_address as Word, self.A, &mut cycles, memory);
+                }
+
+                INS_STA_ABS => {
+                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
+                    
+                    self.write_byte(absolute_address, self.A, &mut cycles, memory);
+                }
+
+                INS_STA_ABSX => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
+
+                    self.write_byte(absolute_address_x, self.A, &mut cycles, memory);
+                }
+
+                INS_STA_ABSY => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
+
+                    self.write_byte(absolute_address_y, self.A, &mut cycles, memory);
+                }
+
+                INS_STA_INDX => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let zero_page_address = zero_page_address.wrapping_add(self.X);
+
+                    cycles -= 1;
+
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
+
+                    self.write_byte(effective_address, self.A, &mut cycles, memory);
+                }
+
+                INS_STA_INDY => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
+                    let effective_address_y = effective_address.wrapping_add(self.Y as Word);
+
+                    self.write_byte(effective_address_y, self.A, &mut cycles, memory);
                 }
 
                 //JSR/RTS
@@ -441,13 +549,6 @@ impl CPU {
                     let effective_address: Word = self.read_word(&mut cycles, pointer, memory);
 
                     self.PC = effective_address;
-                }
-
-                //STA
-                INS_STA_ABS => {
-                    let address: Word = self.fetch_word( &mut cycles, memory );
-                    
-                    self.write_byte(address, self.A, &mut cycles, memory);
                 }
 
                 //CL
