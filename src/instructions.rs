@@ -1,5 +1,25 @@
 use crate::Byte;
 
+// Instructions
+pub mod lda;
+pub mod ldx;
+pub mod ldy;
+
+pub mod jsr;
+pub mod rts;
+
+pub mod jmp;
+
+pub mod adc;
+
+pub mod sta;
+pub mod stx;
+pub mod sty;
+
+pub mod and;
+
+pub mod clc;
+
 // Opcodes
 pub const INS_LDA_IM: Byte = 0xA9;
 pub const INS_LDA_ZP: Byte = 0xA5;
@@ -44,5 +64,22 @@ pub const INS_STA_ABSX: Byte = 0x9D;
 pub const INS_STA_ABSY: Byte = 0x99;
 pub const INS_STA_INDX: Byte = 0x81;
 pub const INS_STA_INDY: Byte = 0x91;
+
+pub const INS_STY_ZP: Byte = 0x84;
+pub const INS_STY_ZPX: Byte = 0x94;
+pub const INS_STY_ABS: Byte = 0x8C;
+
+pub const INS_STX_ZP: Byte = 0x86;
+pub const INS_STX_ZPY: Byte = 0x96;
+pub const INS_STX_ABS: Byte = 0x8E;
+
+pub const INS_AND_IM: Byte = 0x29;
+pub const INS_AND_ZP: Byte = 0x25;
+pub const INS_AND_ZPX: Byte = 0x35;
+pub const INS_AND_ABS: Byte = 0x2D;
+pub const INS_AND_ABSX: Byte = 0x3D;
+pub const INS_AND_ABSY: Byte = 0x39;
+pub const INS_AND_INDX: Byte = 0x21;
+pub const INS_AND_INDY: Byte = 0x31;
 
 pub const INS_CLC_I: Byte = 0x18;

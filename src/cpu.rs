@@ -1,5 +1,3 @@
-use std::path::absolute;
-
 use crate::{Byte, Word};
 use crate::memory::MEM;
 use crate::instructions::*;
@@ -53,7 +51,7 @@ impl CPU {
     }
 
     // Set status functions
-    fn ld_set_status(&mut self) {
+    pub fn set_zn_status(&mut self) {
         if self.A == 0 {
             self.PS |= Z;
         } else {
@@ -67,7 +65,7 @@ impl CPU {
         }
     }
 
-    fn adc_set_status(&mut self, value: u8, carry: u8) {
+    pub fn adc_set_status(&mut self, value: u8, carry: u8) -> u8 {
         let sum = self.A as u16 + value as u16 + carry as u16;
         let result = sum as u8;
 
@@ -95,10 +93,10 @@ impl CPU {
             self.PS &= !C; 
         }
 
-        self.A = result;
+        return result;
     }
 
-    fn cl_set_status(&mut self, flag: Byte) {
+    pub fn cl_set_status(&mut self, flag: Byte) {
         match flag {
             C => {
                 self.PS &= !C;
@@ -123,7 +121,7 @@ impl CPU {
     }
 
     // Read/Fetch Byte
-    fn fetch_byte(&mut self, cycles: &mut u32, memory: &MEM) -> Byte {
+    pub fn fetch_byte(&mut self, cycles: &mut u32, memory: &MEM) -> Byte {
         let data: Byte = memory.DATA[self.PC as usize];
         self.PC += 1; 
 
@@ -131,13 +129,14 @@ impl CPU {
         return data;
     }
 
-    fn read_byte(&mut self, cycles: &mut u32, address: Word, memory: &MEM) -> Byte {
+    pub fn read_byte(&mut self, cycles: &mut u32, address: Word, memory: &MEM) -> Byte {
         let data: Byte = memory.DATA[address as usize];
         *cycles -= 1;
         return data;
     }
-
-    fn fetch_word(&mut self, cycles: &mut u32, memory: &MEM) -> Word {
+    
+    // Read/Fetch Word
+    pub fn fetch_word(&mut self, cycles: &mut u32, memory: &MEM) -> Word {
         let mut data: Word = memory[self.PC as usize] as Word;
         self.PC += 1;
 
@@ -148,39 +147,46 @@ impl CPU {
         return data;
     }
 
-    fn read_word(&mut self, cycles: &mut u32, address: Word, memory: &MEM) -> Word {
+     pub fn read_word(&mut self, cycles: &mut u32, address: Word, memory: &MEM) -> Word {
         let low_byte: Word = self.read_byte(cycles, address, memory) as Word;
         let high_byte: Word = self.read_byte(cycles, address + 1, memory) as Word;
 
         return low_byte | (high_byte << 8);
     }
-
-    fn push_sp_to_stack(&mut self, cycles: &mut u32, memory: &mut MEM) {
+    
+    // Push the stack pointer to a stack
+    pub fn push_sp_to_stack(&mut self, cycles: &mut u32, memory: &mut MEM) {
         self.write_word(0x0100 | self.SP as Word - 1, self.PC - 1, cycles, memory);
         self.SP -= 2;
     }
+    
 
-    fn pop_word_from_stack(&mut self, cycles: &mut u32, memory: &mut MEM) -> Word {
+    pub fn pop_word_from_stack(&mut self, cycles: &mut u32, memory: &mut MEM) -> Word {
         let value: Word = self.read_word(cycles, 0x0100 | self.SP as Word + 1, memory);
         self.SP += 2;
         *cycles -= 1;
         return value;
     }
 
-
-    fn write_word(&mut self, address: Word, data: Word, cycles: &mut u32, memory: &mut MEM) {
+    // Write a word to memory
+    pub fn write_word(&mut self, address: Word, data: Word, cycles: &mut u32, memory: &mut MEM) {
         memory.DATA[address as usize]         = (data & 0x00FF) as Byte;
         memory.DATA[(address + 1) as usize]   = (data >> 8) as Byte;
 
         *cycles -= 2; 
     }
-
-    fn write_byte(&mut self, address: Word, data: Byte, cycles: &mut u32, memory: &mut MEM) {
+    
+    // Write a byte to memory
+    pub fn write_byte(&mut self, address: Word, data: Byte, cycles: &mut u32, memory: &mut MEM) {
         memory.DATA[address as usize] = data;
 
         *cycles -= 1;
     }
 
+    //Bitwise AND
+    pub fn bitwise_and(&mut self, accumulator: Byte, value: Byte) -> Byte {
+        return accumulator & value;
+    }
 
     // Execute code on the CPU
     pub fn execute(&mut self, mut cycles: u32, memory: &mut MEM) {
@@ -194,7 +200,7 @@ impl CPU {
                     let value: Byte = self.fetch_byte( &mut cycles, memory );
                     let carry: Byte = if self.PS & C != 0 {1} else {0};
 
-                    self.adc_set_status(value, carry); 
+                    self.A = self.adc_set_status(value, carry); 
                 }
 
                 INS_ADC_ZP => {
@@ -202,7 +208,7 @@ impl CPU {
                     let carry: Byte = if self.PS & C != 0 {1} else {0};
 
                     let value = self.read_byte(&mut cycles, zero_page_address as Word, memory);
-                    self.adc_set_status(value, carry);
+                    self.A = self.adc_set_status(value, carry); 
                 }
 
                 INS_ADC_ZPX => {
@@ -213,7 +219,7 @@ impl CPU {
                     cycles -= 1;
 
                     let value = self.read_byte(&mut cycles, zero_page_address as Word, memory);
-                    self.adc_set_status(value, carry);  
+                    self.A = self.adc_set_status(value, carry); 
                 }
 
                 INS_ADC_ABS => {
@@ -221,7 +227,7 @@ impl CPU {
                     let carry: Byte = if self.PS & C != 0 {1} else {0};
 
                     let value = self.read_byte(&mut cycles, absolute_address, memory);
-                    self.adc_set_status(value, carry);
+                    self.A = self.adc_set_status(value, carry); 
                 }
 
                 INS_ADC_ABSX => {
@@ -235,7 +241,7 @@ impl CPU {
                     }
 
                     let value = self.read_byte(&mut cycles, absolute_address_x, memory);
-                    self.adc_set_status(value, carry);  
+                    self.A = self.adc_set_status(value, carry); 
                 }
 
                 INS_ADC_ABSY => {
@@ -248,7 +254,7 @@ impl CPU {
                     }
 
                     let value = self.read_byte(&mut cycles, absolute_address_y, memory);
-                    self.adc_set_status(value, carry);
+                    self.A = self.adc_set_status(value, carry); 
                 }
 
                 INS_ADC_INDX => {
@@ -261,7 +267,7 @@ impl CPU {
                     let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
                     let value = self.read_byte(&mut cycles, effective_address, memory);
 
-                    self.adc_set_status(value, carry);
+                    self.A = self.adc_set_status(value, carry); 
                 }
 
                 INS_ADC_INDY => {
@@ -276,7 +282,7 @@ impl CPU {
                         cycles -= 1;
                     }
 
-                    self.adc_set_status(value, carry);
+                    self.A = self.adc_set_status(value, carry); 
                 }
 
                 //LDA
@@ -284,7 +290,7 @@ impl CPU {
                     let value: Byte = self.fetch_byte( &mut cycles, memory );
                     self.A = value;
                     
-                    self.ld_set_status();
+                    self.set_zn_status();
 
                     dump_memory(memory, 0x0000, 0xFFFF);
                     self.debug();
@@ -294,7 +300,7 @@ impl CPU {
                     let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
                     self.A = self.read_byte( &mut cycles, zero_page_address as Word, memory);
 
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
 
                 INS_LDA_ZPX => {
@@ -304,14 +310,14 @@ impl CPU {
                     cycles -= 1;
 
                     self.A = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
 
                 INS_LDA_ABS => {
                     let absolute_address: Word = self.fetch_word( &mut cycles, memory );
                     self.A = self.read_byte(&mut cycles, absolute_address, memory);
 
-                    self.ld_set_status();
+                    self.set_zn_status();
 
                     self.debug();
                 }
@@ -325,7 +331,7 @@ impl CPU {
                         cycles -= 1;
                     }
 
-                    self.ld_set_status();
+                    self.set_zn_status();
 
                     self.debug();
                 }
@@ -339,7 +345,7 @@ impl CPU {
                         cycles -= 1;
                     }
 
-                    self.ld_set_status();
+                    self.set_zn_status();
 
                     self.debug();
                 }
@@ -347,13 +353,12 @@ impl CPU {
                 INS_LDA_INDX => {
                     let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
                     let zero_page_address = zero_page_address.wrapping_add(self.X);
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
 
                     cycles -= 1;
 
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
                     self.A = self.read_byte(&mut cycles, effective_address, memory);
-
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
 
                 INS_LDA_INDY => {
@@ -361,15 +366,12 @@ impl CPU {
                     let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
                     let effective_address_y = effective_address.wrapping_add(self.Y as Word);
 
-                    self.A = self.read_byte(&mut cycles, effective_address_y, memory);
-
                     if (effective_address & 0xFF00) != (effective_address_y & 0xFF00) {
                         cycles -= 1;
                     }
 
-                    self.ld_set_status();
-
-                    self.debug();
+                    self.A = self.read_byte(&mut cycles, effective_address_y, memory);
+                    self.set_zn_status();
                 }
                 
                 //LDX
@@ -377,14 +379,14 @@ impl CPU {
                     let value: Byte = self.fetch_byte( &mut cycles, memory );
                     self.X = value;
                     
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
 
                 INS_LDX_ZP => {
                     let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
                     self.X = self.read_byte( &mut cycles, zero_page_address as Word, memory);
 
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
                 
                 INS_LDX_ZPY => {
@@ -394,14 +396,14 @@ impl CPU {
                     cycles -= 1;
 
                     self.X = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
 
                 INS_LDX_ABS => {
                     let absolute_address: Word = self.fetch_word( &mut cycles, memory );
                     self.X = self.read_byte(&mut cycles, absolute_address, memory);
 
-                    self.ld_set_status();
+                    self.set_zn_status();
 
                     self.debug();
                 }
@@ -415,7 +417,7 @@ impl CPU {
                         cycles -= 1;
                     }
 
-                    self.ld_set_status();
+                    self.set_zn_status();
 
                     self.debug();
                 }
@@ -425,14 +427,14 @@ impl CPU {
                     let value: Byte = self.fetch_byte( &mut cycles, memory );
                     self.Y = value;
                     
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
 
                 INS_LDY_ZP => {
                     let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
                     self.Y = self.read_byte( &mut cycles, zero_page_address as Word, memory);
 
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
                 
                 INS_LDY_ZPX => {
@@ -442,14 +444,14 @@ impl CPU {
                     cycles -= 1;
 
                     self.Y = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-                    self.ld_set_status();
+                    self.set_zn_status();
                 }
 
                 INS_LDY_ABS => {
                     let absolute_address: Word = self.fetch_word( &mut cycles, memory );
                     self.Y = self.read_byte(&mut cycles, absolute_address, memory);
 
-                    self.ld_set_status();
+                    self.set_zn_status();
 
                     self.debug();
                 }
@@ -463,7 +465,7 @@ impl CPU {
                         cycles -= 1;
                     }
 
-                    self.ld_set_status();
+                    self.set_zn_status();
 
                     self.debug();
                 }
@@ -521,14 +523,156 @@ impl CPU {
                     self.write_byte(effective_address_y, self.A, &mut cycles, memory);
                 }
 
-                //JSR/RTS
-                INS_JSR => {
-                    let sub_address: Word = self.fetch_word(&mut cycles, memory);
+                //STY
+                INS_STY_ZP => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
 
-                    self.push_sp_to_stack(&mut cycles, memory);
-                    self.PC = sub_address;
+                    self.write_byte(zero_page_address as Word, self.Y, &mut cycles, memory);    
+                }
+
+                INS_STY_ZPX => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let zero_page_address = zero_page_address.wrapping_add(self.X);
+
+                    self.write_byte(zero_page_address as Word, self.Y, &mut cycles, memory);
+                }
+
+                INS_STY_ABS => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+
+                    self.write_byte(absolute_address, self.Y, &mut cycles, memory);
+                }
+
+                //STX
+                INS_STX_ZP => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+
+                    self.write_byte(zero_page_address as Word, self.X, &mut cycles, memory);    
+                }
+
+                INS_STX_ZPY => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let zero_page_address = zero_page_address.wrapping_add(self.Y);
+
+                    self.write_byte(zero_page_address as Word, self.X, &mut cycles, memory);
+                }
+
+                INS_STX_ABS => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+
+                    self.write_byte(absolute_address, self.X, &mut cycles, memory);
+                }
+
+                //AND
+                INS_AND_IM => {
+                    let value: Byte = self.fetch_byte(&mut cycles, memory);
+                    let new_value = self.bitwise_and(self.A, value);
+
+                    self.A = new_value;
+
+                    self.set_zn_status();
+
+                }
+
+                INS_AND_ZP => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let value: Byte = self.read_byte(&mut cycles, zero_page_address as Word, memory);
+                    let new_value = self.bitwise_and(self.A, value);
+
+                    self.A = new_value;
+
+                    self.set_zn_status();
+                }
+
+                INS_AND_ZPX => {
+                    let mut zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    zero_page_address = zero_page_address.wrapping_add(self.X);
 
                     cycles -= 1;
+
+                    let value: Byte = self.read_byte(&mut cycles, zero_page_address as Word, memory);
+                    let new_value = self.bitwise_and(self.A, value);
+
+                    self.A = new_value;
+
+                    self.set_zn_status();
+                }
+
+                INS_AND_ABS => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+                    let value: Byte = self.read_byte(&mut cycles, absolute_address, memory);
+                    let new_value = self.bitwise_and(self.A, value);
+
+                    self.A = new_value;
+
+                    self.set_zn_status();
+                }
+
+                INS_AND_ABSX => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
+
+                    if (absolute_address & 0xFF00) != (absolute_address_x & 0xFF00) {
+                        cycles -= 1;
+                    }
+
+                    let value: Byte = self.read_byte(&mut cycles, absolute_address_x, memory);
+                    let new_value = self.bitwise_and(self.A, value);
+
+                    self.A = new_value;
+
+                    self.set_zn_status();
+                }
+
+                INS_AND_ABSY => {
+                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
+                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
+
+                    if (absolute_address & 0xFF00) != (absolute_address_y & 0xFF00) {
+                        cycles -= 1;
+                    }
+                    
+                    let value: Byte = self.read_byte(&mut cycles, absolute_address_y, memory);
+                    let new_value = self.bitwise_and(self.A, value);
+
+                    self.A = new_value;
+
+                    self.set_zn_status();
+                }
+
+                INS_AND_INDX => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let zero_page_address = zero_page_address.wrapping_add(self.X);
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
+
+                    cycles -= 1;
+
+                    let value = self.read_byte(&mut cycles, effective_address, memory);
+                    let new_value = self.bitwise_and(self.A, value);
+
+                    self.A = new_value;
+                    self.set_zn_status();
+                }
+
+                INS_AND_INDY => {
+                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
+                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
+                    let effective_address_y = effective_address.wrapping_add(self.Y as Word);
+
+                    if (effective_address & 0xFF00) != (effective_address_y & 0xFF00) {
+                        cycles -= 1;
+                    }
+
+                    let value = self.read_byte(&mut cycles, effective_address_y, memory);
+                    let new_value = self.bitwise_and(self.A, value);
+
+                    self.A = new_value;
+                    self.set_zn_status();
+                }
+
+                //JSR/RTS
+                INS_JSR => {
+                    jsr::jsr(self, &mut cycles, memory); 
                 }
 
                 INS_RTS => {
