@@ -1,4 +1,3 @@
-use crate::instructions::rts::rts;
 use crate::{Byte, Word};
 use crate::memory::MEM;
 use crate::instructions::*;
@@ -184,9 +183,17 @@ impl CPU {
         *cycles -= 1;
     }
 
-    //Bitwise AND
+    //Logical operations
     pub fn bitwise_and(&mut self, accumulator: Byte, value: Byte) -> Byte {
         return accumulator & value;
+    }
+
+    pub fn bitwise_eor(&mut self, accumulator: Byte, value: Byte) -> Byte {
+        return accumulator ^ value;
+    }
+
+    pub fn bitwise_ora(&mut self, accumulator: Byte, value: Byte) -> Byte {
+        return accumulator | value;
     }
 
     // Execute code on the CPU
@@ -227,6 +234,72 @@ impl CPU {
 
                 INS_ADC_INDY => {
                     adc::adc_indy(self, &mut cycles, memory, C); 
+                }
+
+                //EOR
+                INS_EOR_IM => {
+                    eor::eor_im(self, &mut cycles, memory); 
+                }
+
+                INS_EOR_ZP => {
+                    eor::eor_zp(self, &mut cycles, memory); 
+                }
+
+                INS_EOR_ZPX => {
+                    eor::eor_zpx(self, &mut cycles, memory); 
+                }
+
+                INS_EOR_ABS => {
+                    eor::eor_abs(self, &mut cycles, memory); 
+                }
+
+                INS_EOR_ABSX => {
+                    eor::eor_absx(self, &mut cycles, memory); 
+                }
+
+                INS_EOR_ABSY => {
+                    eor::eor_absy(self, &mut cycles, memory); 
+                }
+
+                INS_EOR_INDX => {
+                    eor::eor_indx(self, &mut cycles, memory);
+                }
+
+                INS_EOR_INDY => {
+                    eor::eor_indy(self, &mut cycles, memory); 
+                }
+
+                //ORA
+                INS_ORA_IM => {
+                    ora::ora_im(self, &mut cycles, memory); 
+                }
+
+                INS_ORA_ZP => {
+                    ora::ora_zp(self, &mut cycles, memory); 
+                }
+
+                INS_ORA_ZPX => {
+                    ora::ora_zpx(self, &mut cycles, memory); 
+                }
+
+                INS_ORA_ABS => {
+                    ora::ora_abs(self, &mut cycles, memory); 
+                }
+
+                INS_ORA_ABSX => {
+                    ora::ora_absx(self, &mut cycles, memory); 
+                }
+
+                INS_ORA_ABSY => {
+                    ora::ora_absy(self, &mut cycles, memory); 
+                }
+
+                INS_ORA_INDX => {
+                    ora::ora_indx(self, &mut cycles, memory);
+                }
+
+                INS_ORA_INDY => {
+                    ora::ora_indy(self, &mut cycles, memory); 
                 }
 
                 //LDA
