@@ -18,7 +18,7 @@ pub mod sty;
 
 pub mod and;
 
-pub mod clc;
+pub mod cl;
 
 // Opcodes
 pub const INS_LDA_IM: Byte = 0xA9;
@@ -82,4 +82,4 @@ pub const INS_AND_ABSY: Byte = 0x39;
 pub const INS_AND_INDX: Byte = 0x21;
 pub const INS_AND_INDY: Byte = 0x31;
 
-pub const INS_CLC_I: Byte = 0x18;
+pub const INS_CLC: Byte = 0x18;

@@ -1,3 +1,4 @@
+use crate::{Byte, Word};
 use crate::cpu::CPU;
 use crate::memory::MEM;
 

@@ -1,3 +1,4 @@
+use crate::instructions::rts::rts;
 use crate::{Byte, Word};
 use crate::memory::MEM;
 use crate::instructions::*;
@@ -38,7 +39,7 @@ impl CPU {
 impl CPU {
     // Reset CPU
     pub fn reset(&mut self, memory: &mut MEM) {
-        self.PC = 0xFFFC;
+        self.PC = 0x8000;
         self.SP = 0xFF; 
 
         self.A = 0; 
@@ -197,477 +198,198 @@ impl CPU {
 
                 //ADC
                 INS_ADC_IM => {
-                    let value: Byte = self.fetch_byte( &mut cycles, memory );
-                    let carry: Byte = if self.PS & C != 0 {1} else {0};
-
-                    self.A = self.adc_set_status(value, carry); 
+                    adc::adc_im(self, &mut cycles, memory, C); 
                 }
 
                 INS_ADC_ZP => {
-                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    let carry: Byte = if self.PS & C != 0 {1} else {0};
-
-                    let value = self.read_byte(&mut cycles, zero_page_address as Word, memory);
-                    self.A = self.adc_set_status(value, carry); 
+                    adc::adc_zp(self, &mut cycles, memory, C); 
                 }
 
                 INS_ADC_ZPX => {
-                    let mut zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    let carry: Byte = if self.PS & C != 0 {1} else {0};
-                    zero_page_address = zero_page_address.wrapping_add(self.X);
-
-                    cycles -= 1;
-
-                    let value = self.read_byte(&mut cycles, zero_page_address as Word, memory);
-                    self.A = self.adc_set_status(value, carry); 
+                    adc::adc_zpx(self, &mut cycles, memory, C); 
                 }
 
                 INS_ADC_ABS => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-                    let carry: Byte = if self.PS & C != 0 {1} else {0};
-
-                    let value = self.read_byte(&mut cycles, absolute_address, memory);
-                    self.A = self.adc_set_status(value, carry); 
+                    adc::adc_abs(self, &mut cycles, memory, C); 
                 }
 
                 INS_ADC_ABSX => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
-
-                    let carry: Byte = if self.PS & C != 0 {1} else {0};
-
-                    if (absolute_address & 0xFF00) != (absolute_address_x & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    let value = self.read_byte(&mut cycles, absolute_address_x, memory);
-                    self.A = self.adc_set_status(value, carry); 
+                    adc::adc_absx(self, &mut cycles, memory, C); 
                 }
 
                 INS_ADC_ABSY => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
-                    let carry: Byte = if self.PS & C != 0 {1} else {0};
-
-                    if (absolute_address & 0xFF00) != (absolute_address_y & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    let value = self.read_byte(&mut cycles, absolute_address_y, memory);
-                    self.A = self.adc_set_status(value, carry); 
+                    adc::adc_absy(self, &mut cycles, memory, C); 
                 }
 
                 INS_ADC_INDX => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let zero_page_address = zero_page_address.wrapping_add(self.X);
-                    let carry: Byte = if self.PS & C != 0 {1} else {0};
-
-                    cycles -= 1;
-
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-                    let value = self.read_byte(&mut cycles, effective_address, memory);
-
-                    self.A = self.adc_set_status(value, carry); 
+                    adc::adc_indx(self, &mut cycles, memory, C);
                 }
 
                 INS_ADC_INDY => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-                    let effective_address_y = effective_address.wrapping_add(self.Y as Word);
-                    let carry: Byte = if self.PS & C != 0 {1} else {0};
-
-                    let value = self.read_byte(&mut cycles, effective_address_y, memory);
-
-                    if (effective_address & 0xFF00) != (effective_address_y & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    self.A = self.adc_set_status(value, carry); 
+                    adc::adc_indy(self, &mut cycles, memory, C); 
                 }
 
                 //LDA
                 INS_LDA_IM => {
-                    let value: Byte = self.fetch_byte( &mut cycles, memory );
-                    self.A = value;
-                    
-                    self.set_zn_status();
-
-                    dump_memory(memory, 0x0000, 0xFFFF);
-                    self.debug();
+                    lda::lda_im(self, &mut cycles, memory); 
                 }
 
                 INS_LDA_ZP => {
-                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    self.A = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-
-                    self.set_zn_status();
+                    lda::lda_zp(self, &mut cycles, memory);
                 }
 
                 INS_LDA_ZPX => {
-                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    let zero_page_address = zero_page_address.wrapping_add(self.X);
-
-                    cycles -= 1;
-
-                    self.A = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-                    self.set_zn_status();
+                    lda::lda_zpx(self, &mut cycles, memory); 
                 }
 
                 INS_LDA_ABS => {
-                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    self.A = self.read_byte(&mut cycles, absolute_address, memory);
-
-                    self.set_zn_status();
-
-                    self.debug();
+                    lda::lda_abs(self, &mut cycles, memory); 
                 }
 
                 INS_LDA_ABSX => {
-                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
-                    self.A = self.read_byte(&mut cycles, absolute_address_x, memory); 
-
-                    if (absolute_address & 0xFF00) != (absolute_address_x & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    self.set_zn_status();
-
-                    self.debug();
+                    lda::lda_absx(self, &mut cycles, memory); 
                 }
 
                 INS_LDA_ABSY => {
-                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
-                    self.A = self.read_byte(&mut cycles, absolute_address_y, memory); 
-
-                    if (absolute_address & 0xFF00) != (absolute_address_y & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    self.set_zn_status();
-
-                    self.debug();
+                    lda::lda_absy(self, &mut cycles, memory); 
                 }
 
                 INS_LDA_INDX => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let zero_page_address = zero_page_address.wrapping_add(self.X);
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-
-                    cycles -= 1;
-
-                    self.A = self.read_byte(&mut cycles, effective_address, memory);
-                    self.set_zn_status();
+                    lda::lda_indx(self, &mut cycles, memory);
                 }
 
                 INS_LDA_INDY => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-                    let effective_address_y = effective_address.wrapping_add(self.Y as Word);
-
-                    if (effective_address & 0xFF00) != (effective_address_y & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    self.A = self.read_byte(&mut cycles, effective_address_y, memory);
-                    self.set_zn_status();
+                    lda::lda_indy(self, &mut cycles, memory); 
                 }
                 
                 //LDX
                 INS_LDX_IM => {
-                    let value: Byte = self.fetch_byte( &mut cycles, memory );
-                    self.X = value;
-                    
-                    self.set_zn_status();
+                    ldx::ldx_im(self, &mut cycles, memory); 
                 }
 
                 INS_LDX_ZP => {
-                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    self.X = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-
-                    self.set_zn_status();
+                    ldx::ldx_zp(self, &mut cycles, memory); 
                 }
                 
                 INS_LDX_ZPY => {
-                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    let zero_page_address = zero_page_address.wrapping_add(self.Y);
-
-                    cycles -= 1;
-
-                    self.X = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-                    self.set_zn_status();
+                    ldx::ldx_zpy(self, &mut cycles, memory); 
                 }
 
                 INS_LDX_ABS => {
-                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    self.X = self.read_byte(&mut cycles, absolute_address, memory);
-
-                    self.set_zn_status();
-
-                    self.debug();
+                    ldx::ldx_abs(self, &mut cycles, memory); 
                 }
 
                 INS_LDX_ABSY => {
-                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
-                    self.X = self.read_byte(&mut cycles, absolute_address_y, memory); 
-
-                    if (absolute_address & 0xFF00) != (absolute_address_y & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    self.set_zn_status();
-
-                    self.debug();
+                    ldx::ldx_absy(self, &mut cycles, memory); 
                 }
 
                 //LDY
                 INS_LDY_IM => {
-                    let value: Byte = self.fetch_byte( &mut cycles, memory );
-                    self.Y = value;
-                    
-                    self.set_zn_status();
+                    ldy::ldy_im(self, &mut cycles, memory);
                 }
 
                 INS_LDY_ZP => {
-                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    self.Y = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-
-                    self.set_zn_status();
+                    ldy::ldy_zp(self, &mut cycles, memory); 
                 }
                 
                 INS_LDY_ZPX => {
-                    let zero_page_address: Byte = self.fetch_byte( &mut cycles, memory );
-                    let zero_page_address = zero_page_address.wrapping_add(self.X);
-
-                    cycles -= 1;
-
-                    self.Y = self.read_byte( &mut cycles, zero_page_address as Word, memory);
-                    self.set_zn_status();
+                    ldy::ldy_zpx(self, &mut cycles, memory); 
                 }
 
                 INS_LDY_ABS => {
-                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    self.Y = self.read_byte(&mut cycles, absolute_address, memory);
-
-                    self.set_zn_status();
-
-                    self.debug();
+                    ldy::ldy_abs(self, &mut cycles, memory); 
                 }
 
                 INS_LDY_ABSX => {
-                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
-                    self.Y = self.read_byte(&mut cycles, absolute_address_x, memory); 
-
-                    if (absolute_address & 0xFF00) != (absolute_address_x & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    self.set_zn_status();
-
-                    self.debug();
+                    ldy::ldy_absx(self, &mut cycles, memory); 
                 }
 
                 //STA
                 INS_STA_ZP => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-
-                    self.write_byte(zero_page_address as Word, self.A, &mut cycles, memory);    
+                    sta::sta_zp(self, &mut cycles, memory); 
                 }
 
                 INS_STA_ZPX => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let zero_page_address = zero_page_address.wrapping_add(self.X);
-
-                    self.write_byte(zero_page_address as Word, self.A, &mut cycles, memory);
+                    sta::sta_zpx(self, &mut cycles, memory); 
                 }
 
                 INS_STA_ABS => {
-                    let absolute_address: Word = self.fetch_word( &mut cycles, memory );
-                    
-                    self.write_byte(absolute_address, self.A, &mut cycles, memory);
+                    sta::sta_abs(self, &mut cycles, memory);
                 }
 
                 INS_STA_ABSX => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
-
-                    self.write_byte(absolute_address_x, self.A, &mut cycles, memory);
+                    sta::sta_absx(self, &mut cycles, memory); 
                 }
 
                 INS_STA_ABSY => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
-
-                    self.write_byte(absolute_address_y, self.A, &mut cycles, memory);
+                    sta::sta_absy(self, &mut cycles, memory); 
                 }
 
                 INS_STA_INDX => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let zero_page_address = zero_page_address.wrapping_add(self.X);
-
-                    cycles -= 1;
-
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-
-                    self.write_byte(effective_address, self.A, &mut cycles, memory);
+                    sta::sta_indx(self, &mut cycles, memory); 
                 }
 
                 INS_STA_INDY => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-                    let effective_address_y = effective_address.wrapping_add(self.Y as Word);
-
-                    self.write_byte(effective_address_y, self.A, &mut cycles, memory);
+                    sta::sta_indy(self, &mut cycles, memory); 
                 }
 
                 //STY
                 INS_STY_ZP => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-
-                    self.write_byte(zero_page_address as Word, self.Y, &mut cycles, memory);    
+                    sty::sty_zp(self, &mut cycles, memory); 
                 }
 
                 INS_STY_ZPX => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let zero_page_address = zero_page_address.wrapping_add(self.X);
-
-                    self.write_byte(zero_page_address as Word, self.Y, &mut cycles, memory);
+                    sty::sty_zpx(self, &mut cycles, memory); 
                 }
 
                 INS_STY_ABS => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-
-                    self.write_byte(absolute_address, self.Y, &mut cycles, memory);
+                    sty::sty_abs(self, &mut cycles, memory);
                 }
 
                 //STX
                 INS_STX_ZP => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-
-                    self.write_byte(zero_page_address as Word, self.X, &mut cycles, memory);    
+                    stx::stx_zp(self, &mut cycles, memory);  
                 }
 
                 INS_STX_ZPY => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let zero_page_address = zero_page_address.wrapping_add(self.Y);
-
-                    self.write_byte(zero_page_address as Word, self.X, &mut cycles, memory);
+                    stx::stx_zpy(self, &mut cycles, memory); 
                 }
 
                 INS_STX_ABS => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-
-                    self.write_byte(absolute_address, self.X, &mut cycles, memory);
+                    stx::stx_abs(self, &mut cycles, memory); 
                 }
 
                 //AND
                 INS_AND_IM => {
-                    let value: Byte = self.fetch_byte(&mut cycles, memory);
-                    let new_value = self.bitwise_and(self.A, value);
-
-                    self.A = new_value;
-
-                    self.set_zn_status();
-
+                    and::and_im(self, &mut cycles, memory);
                 }
 
                 INS_AND_ZP => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let value: Byte = self.read_byte(&mut cycles, zero_page_address as Word, memory);
-                    let new_value = self.bitwise_and(self.A, value);
-
-                    self.A = new_value;
-
-                    self.set_zn_status();
+                    and::and_zp(self, &mut cycles, memory); 
                 }
 
                 INS_AND_ZPX => {
-                    let mut zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    zero_page_address = zero_page_address.wrapping_add(self.X);
-
-                    cycles -= 1;
-
-                    let value: Byte = self.read_byte(&mut cycles, zero_page_address as Word, memory);
-                    let new_value = self.bitwise_and(self.A, value);
-
-                    self.A = new_value;
-
-                    self.set_zn_status();
+                    and::and_zpx(self, &mut cycles, memory); 
                 }
 
                 INS_AND_ABS => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-                    let value: Byte = self.read_byte(&mut cycles, absolute_address, memory);
-                    let new_value = self.bitwise_and(self.A, value);
-
-                    self.A = new_value;
-
-                    self.set_zn_status();
+                    and::and_abs(self, &mut cycles, memory); 
                 }
 
                 INS_AND_ABSX => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-                    let absolute_address_x = absolute_address.wrapping_add(self.X as Word);
-
-                    if (absolute_address & 0xFF00) != (absolute_address_x & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    let value: Byte = self.read_byte(&mut cycles, absolute_address_x, memory);
-                    let new_value = self.bitwise_and(self.A, value);
-
-                    self.A = new_value;
-
-                    self.set_zn_status();
+                    and::and_absx(self, &mut cycles, memory); 
                 }
 
                 INS_AND_ABSY => {
-                    let absolute_address: Word = self.fetch_word(&mut cycles, memory);
-                    let absolute_address_y = absolute_address.wrapping_add(self.Y as Word);
-
-                    if (absolute_address & 0xFF00) != (absolute_address_y & 0xFF00) {
-                        cycles -= 1;
-                    }
-                    
-                    let value: Byte = self.read_byte(&mut cycles, absolute_address_y, memory);
-                    let new_value = self.bitwise_and(self.A, value);
-
-                    self.A = new_value;
-
-                    self.set_zn_status();
+                    and::and_absy(self, &mut cycles, memory); 
                 }
 
                 INS_AND_INDX => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let zero_page_address = zero_page_address.wrapping_add(self.X);
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-
-                    cycles -= 1;
-
-                    let value = self.read_byte(&mut cycles, effective_address, memory);
-                    let new_value = self.bitwise_and(self.A, value);
-
-                    self.A = new_value;
-                    self.set_zn_status();
+                    and::and_indx(self, &mut cycles, memory); 
                 }
 
                 INS_AND_INDY => {
-                    let zero_page_address: Byte = self.fetch_byte(&mut cycles, memory);
-                    let effective_address: Word = self.read_word(&mut cycles, zero_page_address as Word, memory);
-                    let effective_address_y = effective_address.wrapping_add(self.Y as Word);
-
-                    if (effective_address & 0xFF00) != (effective_address_y & 0xFF00) {
-                        cycles -= 1;
-                    }
-
-                    let value = self.read_byte(&mut cycles, effective_address_y, memory);
-                    let new_value = self.bitwise_and(self.A, value);
-
-                    self.A = new_value;
-                    self.set_zn_status();
+                    and::and_indy(self, &mut cycles, memory); 
                 }
 
                 //JSR/RTS
@@ -676,30 +398,24 @@ impl CPU {
                 }
 
                 INS_RTS => {
-                    let return_address: Word = self.pop_word_from_stack(&mut cycles, memory);
-                    self.PC = return_address + 1;
+                    rts::rts(self, &mut cycles, memory);
 
-                    cycles -= 2;
+                    dump_memory(memory, 0x0000, 0xFFFF);
+                    self.debug();
                 }
 
                 //JMP
                 INS_JMP_ABS => {
-                    let jump_address: Word = self.fetch_word(&mut cycles, memory);
-                    self.PC = jump_address;
+                    jmp::jmp_abs(self, &mut cycles, memory);
                 }
 
                 INS_JMP_IND => {
-                    let pointer: Word = self.fetch_word(&mut cycles, memory);
-                    let effective_address: Word = self.read_word(&mut cycles, pointer, memory);
-
-                    self.PC = effective_address;
+                    jmp::jmp_ind(self, &mut cycles, memory); 
                 }
 
                 //CL
-                INS_CLC_I => {
-                    self.cl_set_status(C);
-                    
-                    cycles -= 1;             
+                INS_CLC => {
+                    cl::cl(self, &mut cycles, memory, C);          
                 }
 
                 _ => {
