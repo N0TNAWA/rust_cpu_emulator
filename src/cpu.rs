@@ -51,23 +51,81 @@ impl CPU {
     }
 
     // Set status functions
-    pub fn set_zn_status(&mut self) {
-        if self.A == 0 {
-            self.PS |= Z;
-        } else {
-            self.PS &= !Z;
-        }
+    pub fn set_zn_status(&mut self, register: &str) {
+        match register {
+            "A" => {
+                if self.A == 0 {
+                    self.PS |= Z;
+                } else {
+                    self.PS &= !Z;
+                }
 
-        if self.A & 0b10000000 > 0 {
+                if self.A & 0b10000000 > 0 {
+                    self.PS |= N;
+                } else {
+                    self.PS &= !N;
+                }
+            }
+
+            "X" => {
+                if self.X == 0 {
+                    self.PS |= Z;
+                } else {
+                    self.PS &= !Z;
+                }
+
+                if self.X & 0b10000000 > 0 {
+                    self.PS |= N;
+                } else {
+                    self.PS &= !N;
+                }
+            }
+
+            "Y" => {
+                if self.Y == 0 {
+                    self.PS |= Z;
+                } else {
+                    self.PS &= !Z;
+                }
+
+                if self.Y & 0b10000000 > 0 {
+                    self.PS |= N;
+                } else {
+                    self.PS &= !N;
+                }
+            }
+
+            _ => {
+                panic!("Invalid cpu register: {}", register);
+            }
+        }
+    }
+
+    pub fn set_vn_status(&mut self, value: Byte) {
+        if value & 0b10000000 > 0 {
             self.PS |= N;
         } else {
             self.PS &= !N;
         }
+
+        if value & 0b01000000 > 0 {
+            self.PS |= V;
+        } else {
+            self.PS &= !V;
+        }
     }
 
-    pub fn adc_set_status(&mut self, value: u8, carry: u8) -> u8 {
-        let sum = self.A as u16 + value as u16 + carry as u16;
-        let result = sum as u8;
+    pub fn set_z_status(&mut self, value: Byte) {
+        if value == 0 {
+            self.PS |= Z;
+        } else {
+            self.PS &= !Z;
+        } 
+    }
+
+    pub fn adc_set_status(&mut self, value: Byte, carry: Byte) -> Byte {
+        let sum = self.A as Word + value as Word + carry as Word;
+        let result = sum as Byte;
 
         if result == 0 {
             self.PS |= Z;
@@ -484,6 +542,40 @@ impl CPU {
 
                 INS_JMP_IND => {
                     jmp::jmp_ind(self, &mut cycles, memory); 
+                }
+
+                //BIT
+                INS_BIT_ZP => {
+                    bit::bit_zp(self, &mut cycles, memory);
+                }
+
+                INS_BIT_ABS => {
+                    bit::bit_abs(self, &mut cycles, memory);
+                }
+
+                //TRANSFER
+                INS_TAX => {
+                    tax::tax(self, &mut cycles, memory);
+                }
+
+                INS_TAY => {
+                    tay::tay(self, &mut cycles, memory);
+                }
+
+                INS_TSX => {
+                    tsx::tsx(self, &mut cycles, memory);
+                }
+
+                INS_TXA => {
+                    txa::txa(self, &mut cycles, memory);
+                }
+
+                INS_TXS => {
+                    txs::txs(self, &mut cycles, memory);
+                }
+
+                INS_TYA => {
+                    tya::tya(self, &mut cycles, memory);
                 }
 
                 //CL

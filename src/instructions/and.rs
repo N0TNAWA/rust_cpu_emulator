@@ -8,7 +8,7 @@ pub fn and_im(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
 
     cpu.A = new_value;
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn and_zp(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -18,7 +18,7 @@ pub fn and_zp(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
 
     cpu.A = new_value;
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn and_zpx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -32,7 +32,7 @@ pub fn and_zpx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
 
     cpu.A = new_value;
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn and_abs(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -42,7 +42,7 @@ pub fn and_abs(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
 
     cpu.A = new_value;
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn and_absx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -58,7 +58,7 @@ pub fn and_absx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
 
     cpu.A = new_value;
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn and_absy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -74,7 +74,7 @@ pub fn and_absy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
 
     cpu.A = new_value;
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn and_indx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -88,7 +88,7 @@ pub fn and_indx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     let new_value = cpu.bitwise_and(cpu.A, value);
 
     cpu.A = new_value;
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn and_indy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -104,5 +104,5 @@ pub fn and_indy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     let new_value = cpu.bitwise_and(cpu.A, value);
 
     cpu.A = new_value;
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }

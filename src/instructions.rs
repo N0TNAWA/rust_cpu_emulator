@@ -19,6 +19,14 @@ pub mod sty;
 pub mod and;
 pub mod eor;
 pub mod ora;
+pub mod bit;
+
+pub mod tax;
+pub mod tay;
+pub mod txa;
+pub mod tya;
+pub mod tsx;
+pub mod txs;
 
 pub mod cl;
 
@@ -49,6 +57,9 @@ pub const INS_RTS: Byte = 0x60;
 
 pub const INS_JMP_ABS: Byte = 0x4C;
 pub const INS_JMP_IND: Byte = 0x6C;
+
+pub const INS_BIT_ZP: Byte = 0x24;
+pub const INS_BIT_ABS: Byte = 0x2C;
 
 pub const INS_ADC_IM: Byte = 0x69;
 pub const INS_ADC_ZP: Byte = 0x65;
@@ -101,5 +112,12 @@ pub const INS_ORA_ABSX: Byte = 0x1D;
 pub const INS_ORA_ABSY: Byte = 0x19;
 pub const INS_ORA_INDX: Byte = 0x01;
 pub const INS_ORA_INDY: Byte = 0x11;
+
+pub const INS_TXA: Byte = 0x8A;
+pub const INS_TYA: Byte = 0x98;
+pub const INS_TAX: Byte = 0xAA;
+pub const INS_TAY: Byte = 0xA8;
+pub const INS_TSX: Byte = 0xBA;
+pub const INS_TXS: Byte = 0x9A;
 
 pub const INS_CLC: Byte = 0x18;

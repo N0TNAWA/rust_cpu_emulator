@@ -6,14 +6,14 @@ pub fn lda_im(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM)  {
     let value: Byte = cpu.fetch_byte( cycles, memory );
     cpu.A = value;
     
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn lda_zp(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     let zero_page_address: Byte = cpu.fetch_byte( cycles, memory );
     cpu.A = cpu.read_byte( cycles, zero_page_address as Word, memory);
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn lda_zpx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -23,14 +23,14 @@ pub fn lda_zpx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     *cycles -= 1;
 
     cpu.A = cpu.read_byte( cycles, zero_page_address as Word, memory);
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn lda_abs(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     let absolute_address: Word = cpu.fetch_word( cycles, memory );
     cpu.A = cpu.read_byte(cycles, absolute_address, memory);
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 
     cpu.debug();
 }
@@ -44,7 +44,7 @@ pub fn lda_absx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
         *cycles -= 1;
     }
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 
     cpu.debug();
 }
@@ -58,7 +58,7 @@ pub fn lda_absy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
         *cycles -= 1;
     }
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn lda_indx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -69,7 +69,7 @@ pub fn lda_indx(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     *cycles -= 1;
 
     cpu.A = cpu.read_byte(cycles, effective_address, memory);
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn lda_indy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -82,5 +82,5 @@ pub fn lda_indy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     }
 
     cpu.A = cpu.read_byte(cycles, effective_address_y, memory);
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }

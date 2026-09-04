@@ -6,14 +6,14 @@ pub fn ldx_im(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     let value: Byte = cpu.fetch_byte(cycles, memory);
     cpu.X = value;
     
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn ldx_zp(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     let zero_page_address: Byte = cpu.fetch_byte( cycles, memory );
     cpu.X = cpu.read_byte(cycles, zero_page_address as Word, memory);
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn ldx_zpy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
@@ -23,14 +23,14 @@ pub fn ldx_zpy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     *cycles -= 1;
 
     cpu.X = cpu.read_byte( cycles, zero_page_address as Word, memory);
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 }
 
 pub fn ldx_abs(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
     let absolute_address: Word = cpu.fetch_word(cycles, memory);
     cpu.X = cpu.read_byte(cycles, absolute_address, memory);
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 
     cpu.debug();
 }
@@ -44,7 +44,7 @@ pub fn ldx_absy(cpu: &mut CPU, cycles: &mut u32, memory: &mut MEM) {
         *cycles -= 1;
     }
 
-    cpu.set_zn_status();
+    cpu.set_zn_status("A");
 
     cpu.debug();
 }
