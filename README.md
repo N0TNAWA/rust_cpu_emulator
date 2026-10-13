@@ -1,15 +1,49 @@
-# MOS 6502-emulator in rust
+# 6502 CPU Emulator
 
-A 6502 emulator written fully in rust with instructions, clock cycles and memory management.
+A MOS 6502 CPU emulator written in Rust, developed to explore computer architecture, instruction execution, and low-level programming.
+
+## Overview
+
+This project aims to emulate the behavior of the MOS 6502 processor in software. The goal is to understand how a CPU executes instructions, interacts with memory, and maintains its internal state.
+
+The emulator is being developed as a foundation for a potential NES emulator.
 
 ## Features
 
-- Reaching better performance compared to emulators written in other languages like C# and Java.
-- A clear and modular code structure separating the cpu, memory and instructions for easy implementation of new instructions.
+- CPU registers and processor status flags
+- Memory representation and access
+- Instruction execution and addressing modes
+- Arithmetic operations and control-flow instructions
 
-## Installation
+## Technologies
 
-Run the following command:
+- Rust
+- Cargo
+
+## Getting Started
+
+### Prerequisites
+
+- [Rust]
+- Cargo (included with Rust)
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/N0TNAWA/rust_cpu_emulator
+cd rust_cpu_emulator
+```
+
+### Running the Emulator
 
 ```bash
 cargo run
+```
+
+## Development Status
+
+This project is under active development. Instructions and addressing modes are being implemented incrementally.
+
+See the source code for the current implementation.
